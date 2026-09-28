@@ -1,0 +1,47 @@
+The cat sat on the mat.
+The cat ate the fish.
+The dog sat on the mat.
+The dog chased the cat.
+The cat chased the mouse.
+The mouse ate the cheese.
+The dog ate the bone.
+The bird sat on the tree.
+The bird watched the dog.
+The cat watched the bird.
+The mouse ran under the table.
+The dog ran across the garden.
+The cat slept on the sofa.
+The dog slept near the door.
+The bird flew over the house.
+The children played in the garden.
+The children watched the bird.
+The teacher entered the classroom.
+The students opened their books.
+The students read the book.
+The teacher wrote on the board.
+The book was on the table.
+The red cat sat beside the blue dog.
+The small mouse ran quickly.
+The large dog walked slowly.
+Alice visited the old house.
+Bob visited the new house.
+Alice saw the cat.
+Bob saw the dog.
+The sun rose above the mountains.
+The moon appeared above the trees.
+The river flowed through the valley.
+The wind moved through the forest.
+The farmer worked in the field.
+The farmer fed the animals.
+The animals walked around the farm.
+The horse ran across the field.
+The cow stood beside the horse.
+The farmer opened the gate.
+The gate was near the old barn.
+The old barn stood behind the house.
+The house had a red door.
+The red door opened slowly.
+The children walked toward the river.
+The children saw a small boat.
+The boat moved across the water.
+The water reflected the moon.
