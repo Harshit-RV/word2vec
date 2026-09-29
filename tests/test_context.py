@@ -5,6 +5,15 @@ from word2vec.training.context import ContextGenerator
 SENTENCE = [[10, 20, 30, 40, 50, 60, 70]]
 
 
+def collect_pairs(generator: ContextGenerator, sentences: list[list[int]]) -> list[tuple[int, int]]:
+    pairs: list[tuple[int, int]] = []
+    for sentence in sentences:
+        for position, center in enumerate(sentence):
+            for context_id in generator.context_ids(sentence, position):
+                pairs.append((center, context_id))
+    return pairs
+
+
 def original_pairs(sentences: list[list[int]], window: int, thread_id: int) -> list[tuple[int, int]]:
     """Direct transcription of the window loop in word2vec.c."""
     state = thread_id & ((1 << 64) - 1)
@@ -25,7 +34,7 @@ def original_pairs(sentences: list[list[int]], window: int, thread_id: int) -> l
 
 
 def test_window_size_one_on_a_seven_word_sentence():
-    pairs = ContextGenerator(window_size=1, thread_id=42).pairs(SENTENCE)
+    pairs = collect_pairs(ContextGenerator(window_size=1, thread_id=42), SENTENCE)
     assert pairs == [
         (10, 20),
         (20, 10),
@@ -43,7 +52,7 @@ def test_window_size_one_on_a_seven_word_sentence():
 
 
 def test_window_size_two_matches_original_loop():
-    pairs = ContextGenerator(window_size=2, thread_id=42).pairs(SENTENCE)
+    pairs = collect_pairs(ContextGenerator(window_size=2, thread_id=42), SENTENCE)
     assert pairs == original_pairs(SENTENCE, window=2, thread_id=42)
     for center, context in pairs:
         distance = abs(SENTENCE[0].index(center) - SENTENCE[0].index(context))
@@ -52,7 +61,7 @@ def test_window_size_two_matches_original_loop():
 
 def test_edges_and_window_larger_than_sentence():
     sentence = [[1, 2, 3]]
-    pairs = ContextGenerator(window_size=10, thread_id=1).pairs(sentence)
+    pairs = collect_pairs(ContextGenerator(window_size=10, thread_id=1), sentence)
     assert pairs == original_pairs(sentence, window=10, thread_id=1)
     assert all(context in sentence[0] for _, context in pairs)
     assert (1, 2) in pairs
@@ -60,12 +69,12 @@ def test_edges_and_window_larger_than_sentence():
 
 
 def test_one_word_sentence_has_no_pairs():
-    assert ContextGenerator(window_size=5, thread_id=0).pairs([[9]]) == []
+    assert collect_pairs(ContextGenerator(window_size=5, thread_id=0), [[9]]) == []
 
 
 def test_multiple_sentences_do_not_cross_boundaries():
     sentences = [[1, 2, 3], [], [4, 5]]
-    pairs = ContextGenerator(window_size=2, thread_id=0).pairs(sentences)
+    pairs = collect_pairs(ContextGenerator(window_size=2, thread_id=0), sentences)
     assert pairs == original_pairs(sentences, window=2, thread_id=0)
     centers = {center for center, _ in pairs}
     assert centers == {1, 2, 3, 4, 5}
@@ -75,18 +84,18 @@ def test_multiple_sentences_do_not_cross_boundaries():
 
 
 def test_duplicate_pairs_only_when_the_sentence_repeats_a_word():
-    unique = ContextGenerator(window_size=1, thread_id=0).pairs([[1, 2, 3]])
+    unique = collect_pairs(ContextGenerator(window_size=1, thread_id=0), [[1, 2, 3]])
     assert len(unique) == len(set(unique))
-    repeated = ContextGenerator(window_size=1, thread_id=0).pairs([[8, 8]])
+    repeated = collect_pairs(ContextGenerator(window_size=1, thread_id=0), [[8, 8]])
     assert repeated == [(8, 8), (8, 8)]
 
 
 def test_dynamic_window_changes_how_many_contexts_a_center_gets():
     window = 4
     sentence = [list(range(12))]
-    first = ContextGenerator(window_size=window, thread_id=42).pairs(sentence)
-    second = ContextGenerator(window_size=window, thread_id=42).pairs(sentence)
-    other = ContextGenerator(window_size=window, thread_id=7).pairs(sentence)
+    first = collect_pairs(ContextGenerator(window_size=window, thread_id=42), sentence)
+    second = collect_pairs(ContextGenerator(window_size=window, thread_id=42), sentence)
+    other = collect_pairs(ContextGenerator(window_size=window, thread_id=7), sentence)
     assert first == second
     assert first != other
 
@@ -101,14 +110,14 @@ def test_dynamic_window_changes_how_many_contexts_a_center_gets():
 def test_same_generator_draws_a_new_window_each_pass():
     generator = ContextGenerator(window_size=4, thread_id=42)
     sentence = [[0, 1, 2, 3, 4, 5, 6, 7, 8]]
-    assert generator.pairs(sentence) != generator.pairs(sentence)
+    assert collect_pairs(generator, sentence) != collect_pairs(generator, sentence)
 
 
 def test_default_thread_id_is_zero():
     sentence = [[0, 1, 2, 3, 4, 5]]
-    assert ContextGenerator(window_size=3).pairs(sentence) == ContextGenerator(
-        window_size=3, thread_id=0
-    ).pairs(sentence)
+    assert collect_pairs(ContextGenerator(window_size=3), sentence) == collect_pairs(
+        ContextGenerator(window_size=3, thread_id=0), sentence
+    )
 
 
 @pytest.mark.parametrize("window", [1, 2, 5])
@@ -121,6 +130,6 @@ def test_matches_word2vec_c_loop(window: int, thread_id: int):
         [],
         list(range(12)),
     ]
-    assert ContextGenerator(window, thread_id=thread_id).pairs(sentences) == original_pairs(
+    assert collect_pairs(ContextGenerator(window, thread_id=thread_id), sentences) == original_pairs(
         sentences, window, thread_id
     )
